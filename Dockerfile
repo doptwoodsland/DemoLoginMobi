@@ -1,26 +1,27 @@
 # Sử dụng image Node làm base image
-FROM node:20-bullseye
+FROM node:20
 
-# Cài đặt các phụ thuộc cần thiết cho build Android
-RUN apt-get update && apt-get install -y openjdk-11-jdk wget unzip build-essential git
+# Cài đặt các phụ thuộc cần thiết cho Android build
+RUN apt-get update && \
+    apt-get install -y wget unzip build-essential git && \
+    apt-get install -y openjdk-17-jdk || apt-get install -y default-jdk
 
 # Thiết lập biến môi trường cho Android
-ENV ANDROID_HOME=/opt/android-sdk
-RUN echo "ANDROID_HOME: $ANDROID_HOME"
-ENV PATH=${PATH}:${ANDROID_HOME}/cmdline-tools/latest/bin:${ANDROID_HOME}/platform-tools
+ENV ANDROID_SDK_ROOT=/opt/android-sdk
+ENV PATH=${PATH}:${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin:${ANDROID_SDK_ROOT}/platform-tools
 
 # Tải và cài đặt Android SDK command line tools
-RUN mkdir -p ${ANDROID_HOME}/cmdline-tools && \
-    cd ${ANDROID_HOME}/cmdline-tools && \
-    wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip && \
-    unzip commandlinetools-linux-9477386_latest.zip -d latest && \
-    rm commandlinetools-linux-9477386_latest.zip
+RUN mkdir -p ${ANDROID_SDK_ROOT}/cmdline-tools && \
+    wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O /tmp/cmdline-tools.zip && \
+    unzip /tmp/cmdline-tools.zip -d ${ANDROID_SDK_ROOT}/cmdline-tools && \
+    mkdir -p ${ANDROID_SDK_ROOT}/cmdline-tools/latest && \
+    mv ${ANDROID_SDK_ROOT}/cmdline-tools/cmdline-tools/* ${ANDROID_SDK_ROOT}/cmdline-tools/latest/ && \
+    rm /tmp/cmdline-tools.zip
 
 # Chấp nhận giấy phép và cài đặt các gói Android SDK cần thiết
-RUN yes | ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager --licenses && \
-    ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;android-33" "build-tools;33.0.0"
+RUN yes | ${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager --licenses && \
+    ${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;android-33" "build-tools;33.0.0"
 
-RUN ping -c 1 google.com
 # Tạo thư mục ứng dụng
 WORKDIR /app
 
